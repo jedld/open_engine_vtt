@@ -58,6 +58,7 @@ set :battle, nil
 set :ai_controller, nil
 set :current_soundtrack, nil
 set :logins, LOGINS
+set :timeout, 600
 
 def create_2d_array(n, m)
   Array.new(n) { Array.new(m) { rand(1..4) } }
@@ -81,8 +82,8 @@ get '/path' do
 
   path = AiController::PathCompute.new(nil, settings.map, entity).compute_path(source['x'].to_i, source['y'].to_i, destination['x'].to_i, destination['y'].to_i)
   cost = settings.map.movement_cost(entity, path)
-  placeable = settings.map.placeable?(entity, destination['x'].to_i, destination['y'].to_i)
-  { path: path, cost: cost, placeable: placeable }.to_json
+  placeable = settings.map.placeable?(entity, destination['x'].to_i, destination['y'].to_i, settings.battle, false)
+  { path: cost.movement, cost: cost, placeable: placeable }.to_json
 end
 
 before do
@@ -160,7 +161,7 @@ get '/event' do
         entity = settings.map.entity_at(data['message']['from']['x'], data['message']['from']['y'])
 
         if (settings.map.placeable?(entity, data['message']['to']['x'], data['message']['to']['y']))
-          settings.map.move_to!(entity, data['message']['to']['x'], data['message']['to']['y'])
+          settings.map.move_to!(entity, data['message']['to']['x'], data['message']['to']['y'], settings.battle)
           settings.sockets.each do |socket|
             socket.send({type: 'move', message: {from: data['message']['from'], to: data['message']['to']}}.to_json)
           end
@@ -230,23 +231,20 @@ end
 # sample request: {"battle_turn_order"=>{"0"=>{"id"=>"f437404e-52f9-40d2-b7d4-d6390d397d30", "group"=>"a"}, "1"=>{"id"=>"afe24663-a079-4390-9fbb-c12218b46f7b", "group"=>"a"}}}::1 - - [02/Oct/2023:19:26:41 +0800] "POST /battle HTTP/1.1" 2
 post "/battle" do
   content_type :json
-  settings.battle = Battle.new(game_session, settings.map)
   settings.ai_controller =  AiController::Standard.new
+  settings.battle = Natural20::Battle.new(game_session, settings.map, settings.ai_controller)
+
   params[:battle_turn_order].values.each do |param_item|
     entity = settings.map.entity_by_uid(param_item['id'])
-    settings.ai_controller.register_handlers_on(entity)
     settings.battle.add(entity, param_item['group'].to_sym)
     entity.reset_turn!(settings.battle)
   end
   settings.battle.start
   settings.sockets.each do |socket|
     socket.send({type: 'initiative', message: { }}.to_json)
+    socket.send({type: 'move', message: { }}.to_json)
   end
-  settings.battle.start_turn
 
-  action = settings.ai_controller.move_for(settings.battle.current_turn, settings.battle)
-  settings.battle.action!(action)
-  settings.battle.commit(action)
 
   { status: 'ok' }.to_json
 end
@@ -260,7 +258,7 @@ def ai_loop
   cycles = 0
   loop do
     cycles += 1
-    action = settings.ai_controller.move_for(entity, settings.battle)
+    action = settings.battle.move_for(entity)
 
     if action.nil?
       puts "#{entity.name}: End turn."
@@ -269,24 +267,28 @@ def ai_loop
 
     settings.battle.action!(action)
     settings.battle.commit(action)
-    break if action.nil?
+
+    break if action.nil? || entity.unconscious?
   end
 end
 
 post "/next_turn" do
   if settings.battle
-    
-    settings.battle.end_turn
-    settings.battle.next_turn
+
     settings.battle.start_turn
 
-    if settings.battle.current_turn.concious?
+    current_turn = settings.battle.current_turn
+    if current_turn.conscious?
+      current_turn.reset_turn!(settings.battle)
       ai_loop
+      current_turn.send(:resolve_trigger, :end_of_turn)
     else
-      settings.battle.next_turn
-      settings.battle.start_turn
+      current_turn.send(:resolve_trigger, :end_of_turn)
     end
 
+    settings.battle.end_turn
+    settings.battle.next_turn
+    
     settings.sockets.each do |socket|
       socket.send({type: 'initiative', message: { }}.to_json)
       socket.send({type: 'move', message: { }}.to_json)

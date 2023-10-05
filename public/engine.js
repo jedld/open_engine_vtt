@@ -197,7 +197,8 @@ $(document).ready(function() {
           console.log('Path request successful:', data.path);
           $('.highlighted').removeClass('highlighted'); 
           // Highlight the squares returned by data
-          var cost = data.cost
+
+          var available_cost = (data.cost.original_budget -  data.cost.budget )* 5
           var placeable = data.placeable
           var rect = canvas.getBoundingClientRect();
           var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
@@ -235,7 +236,7 @@ $(document).ready(function() {
               }
               ctx.font = "20px Arial";
               ctx.fillStyle = "red";
-              ctx.fillText(cost + "ft", centerX, centerY  +  tileRect.height / 2);
+              ctx.fillText(available_cost + "ft", centerX, centerY  +  tileRect.height / 2);
             }
             
             prevX = centerX;
@@ -262,6 +263,15 @@ $(document).ready(function() {
       moveMode = true
       source = {x: coordsx, y: coordsy}
       $('.tiles-container .popover-menu').hide();
+    }
+  });
+
+  $(document).on('keydown', function(event) {
+    if (event.keyCode === 27) { // ESC key
+      if (moveMode) {
+        moveMode = false
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
   });
 

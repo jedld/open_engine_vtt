@@ -1,6 +1,7 @@
 name: Battle Sim
 description: Map for Battle Sim
 map:
+  illumination: 1.0
   base:
     - ......................
     - ......................
