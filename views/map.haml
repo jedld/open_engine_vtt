@@ -1,0 +1,39 @@
+- tiles.each_with_index do |layer, layer_index|
+  - layer.each_with_index do |row, row_index|
+    %div{:style => "display: flex;"}
+      - row.each_with_index do |tile, col_index|
+        .tile{:data => {:coords => {:x => col_index, :y => row_index, difficult: tile[:difficult]}}, :style => "top: #{row_index * tile_size_px}; left: #{col_index * tile_size_px}"}
+          - if tile[:entity].nil?
+            %div{:style => "position: relative;"}
+              %div{:style => "width: #{tile_size_px}px; height: #{tile_size_px}px;"}
+              %div{:class => "popover-menu", :style => "display: none;"}
+                %ul
+                  %li Info
+              %div{:class => "floating-text-bar", :style => "background-color: white; color: black;"}
+                = tile[:name]
+
+          - else
+            %div.entity{:style => "position: relative;", :data => {:id => tile[:id]}}
+
+              - entity_size = tile[:entity_size]
+              - multiplier = 1
+              - multiplier = 2 if entity_size == "large"
+              - image_size_px = tile_size_px * multiplier
+
+              %img.npc{:src => "assets/#{tile[:entity]}", :style => "width: #{image_size_px}px; height: #{image_size_px}px;  opacity: #{tile[:dead] ? 0.3 : 1};"}
+              - if is_setup
+                %button.btn.add-to-turn-order{:class => "button text-center", :style => "top: 7px; right: 0;", :data => {:id => tile[:id], :name => tile[:name]}}
+                  %i.glyphicon.glyphicon-plus
+
+              %div{:class => "popover-menu", :style => "display: none;"}
+                %ul
+                  %li Info
+                  %li{ :data => {item: :move } } Move
+              - health_width = (tile[:hp].to_f/tile[:max_hp].to_f) * image_size_px
+              - color = (tile[:hp].to_f/tile[:max_hp].to_f) < 0.2 ? "red" : "green"
+              %div.health-bar{:style => "width: #{health_width}px; background-color: #{color};"}
+              - if tile[:name].presence
+                %div.nameplate
+                  = tile[:name]
+                  
+                  

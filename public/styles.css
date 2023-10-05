@@ -1,0 +1,105 @@
+#floating-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: white;
+  padding: 10px;
+  border: 1px solid black;
+  z-index: 3;
+}
+
+#floating-menu ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiles-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1
+}
+
+.health-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 6px;
+  border: white 1px solid;
+}
+
+.nameplate {
+  position: absolute;
+  padding: 2px;
+  left: 0;
+  background-color: white; color: black;
+}
+
+.tile {
+  position: absolute
+}
+
+.image-container {
+  z-index: 0;
+}
+
+.tile:hover {
+  border: 1px solid red;
+}
+
+.popover-menu {
+  background-color: blue;
+  color: white;
+  position: absolute;
+  z-index: 1;
+  padding: 2px;
+}
+
+.popover-menu ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.highlight {
+  color: white;
+  background-color: black;
+}
+
+.highlighted {
+  border: 2px solid rgba(144, 238, 144);
+}
+
+#battle-turn-order {
+  position: absolute;
+  top: 0px;
+  left: 150px;
+  width: 250px;
+  height: 300px;
+  background-color: white;
+  border: 1px solid black;
+  resize: vertical;
+  overflow: auto;
+  z-index: 3;
+  margin: 5px;
+}
+
+#battle-turn-order .header {
+  text-align: center;
+  color: white;
+  background-color: blue;
+}
+
+.add-to-turn-order {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  z-index: 4;
+}
+
+input.initiative-text {
+  color: black;
+}
+
+#battle-turn-order div.turn-order-item {
+  padding: 5px;
+}
