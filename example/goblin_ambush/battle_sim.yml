@@ -53,8 +53,13 @@ legend:
     type: npc
     sub_type: owlbear
   g:
-    name: Krizzit
+    name: _auto_
     type: npc
     sub_type: goblin
     overrides:
       hp: 40
+player:
+  - position: [3, 3]
+    sheet: characters/halfling_rogue.yml
+  - position: [4, 5]
+    sheet: characters/high_elf_fighter.yml

@@ -16,6 +16,7 @@ require 'json'
 require 'natural_20/web/json_renderer'
 
 require 'logger'
+require 'web_logger'
 
 Faye::WebSocket.load_adapter('thin')
 
@@ -31,6 +32,11 @@ set :session_secret, "fe9707b4704da2a96d0fd3cbbb465756e124b8c391c72a27ff32a06211
 helpers do
   def logged_in?
     !session[:username].nil?
+  end
+
+  def user_role
+    login_info = settings.logins.find { |login| login["name"].downcase == session[:username] }
+    login_info["role"]
   end
 end
 
@@ -63,6 +69,20 @@ set :timeout, 600
 def create_2d_array(n, m)
   Array.new(n) { Array.new(m) { rand(1..4) } }
 end
+
+class WebSocketLogger
+  def initialize(settings)
+    @settings = settings
+  end
+  def output(message)
+    @settings.sockets.each do |socket|
+      socket.send({type: 'console', message: message}.to_json)
+    end
+  end
+end
+
+web_logger = WebLogger.new(WebSocketLogger.new(settings))
+web_logger.standard_web
 
 get '/assets/:asset_name' do
   asset_name = params[:asset_name]
@@ -132,7 +152,8 @@ get '/' do
                            background_height: tiles_dimenstion_height,
                            battle: settings.battle,
                            soundtrack: settings.current_soundtrack,
-                           title: TITLE}
+                           title: TITLE,
+                           role: user_role}
 end
 
 get '/update' do
@@ -272,26 +293,50 @@ def ai_loop
   end
 end
 
+def end_current_battle
+  settings.battle = nil
+  settings.ai_controller = nil
+
+  settings.sockets.each do |socket|
+    socket.send({type: 'stop', message: { }}.to_json)
+  end
+end
+
 post "/next_turn" do
   if settings.battle
 
     settings.battle.start_turn
 
     current_turn = settings.battle.current_turn
-    if current_turn.conscious?
-      current_turn.reset_turn!(settings.battle)
-      ai_loop
+    
+    while current_turn.dead?
       current_turn.send(:resolve_trigger, :end_of_turn)
-    else
-      current_turn.send(:resolve_trigger, :end_of_turn)
+      
+      settings.battle.end_turn
+      settings.battle.next_turn
+      current_turn = settings.battle.current_turn
+
+      if settings.battle.battle_ends?
+        end_current_battle
+        return { status: 'tpk' }.to_json
+      end
     end
 
+    current_turn.reset_turn!(settings.battle)
+    ai_loop
+    current_turn.send(:resolve_trigger, :end_of_turn)
+
     settings.battle.end_turn
-    settings.battle.next_turn
+    result = settings.battle.next_turn
+    
+    if settings.battle.battle_ends?
+      end_current_battle
+      return { status: 'tpk' }.to_json
+    end
     
     settings.sockets.each do |socket|
-      socket.send({type: 'initiative', message: { }}.to_json)
-      socket.send({type: 'move', message: { }}.to_json)
+      socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
+      socket.send({type: 'move', message: { id: current_turn.entity_uid }}.to_json)
     end
   end
 end
@@ -305,4 +350,9 @@ post "/stop" do
       socket.send({type: 'stop', message: { }}.to_json)
     end
   end
+end
+
+post "/logout" do
+  session[:username] = nil
+  redirect to('/login')
 end

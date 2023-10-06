@@ -1,8 +1,66 @@
+
+function draggable(container_selector) {
+  $(function() {
+    var isDragging = false;
+    var lastX, lastY;
+  
+    $(container_selector + ' .header').mousedown(function(e) {
+      isDragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+  
+    $(document).mousemove(function(e) {
+      if (isDragging) {
+        var deltaX = e.clientX - lastX;
+        var deltaY = e.clientY - lastY;
+        var offset = $(container_selector).offset();
+        $(container_selector).offset({
+          top: offset.top + deltaY,
+          left: offset.left + deltaX
+        });
+        lastX = e.clientX;
+        lastY = e.clientY;
+      }
+    }).mouseup(function() {
+      isDragging = false;
+    });
+  });
+}
+
 function command(command) {
   ws.send(JSON.stringify({type: 'command', user: 'username', message: {action: "command", command: command }}));
 }
 
+function centerOnTile(tile) {
+  const $board = $('.tiles-container');
+  const boardWidth = $(window).width();
+  const boardHeight =  $(window).height();
+  const tileWidth = tile.width();
+  const tileHeight = tile.height();
+  var tileOffset = tile.offset();
+  var tileLeft = tileOffset.left;
+  var tileTop = tileOffset.top;
+  const scrollLeft = tileLeft - (boardWidth / 2) + (tileWidth / 2);
+  const scrollTop = tileTop - (boardHeight / 2) + (tileHeight / 2);
+  $('.tile .entity').removeClass('focus-highlight');
+  tile.find('.entity').addClass('focus-highlight');
+  $('html, body').animate({
+    scrollLeft: scrollLeft,
+    scrollTop: scrollTop
+  }, 500);
+}
 
+function centerOnTileXY(x, y) {
+  var tile = $('.tile[data-coords][data-coords-x="' + x + '"][data-coords-y="' + y + '"]');
+  centerOnTile(tile);
+}
+
+function centerOnEntityId(id) {
+  debugger;
+  var tile = $('.tile[data-coords-id="' + id + '"]');
+  centerOnTile(tile);
+}
 
 $(document).ready(function() {
   var active_background_sound = null;
@@ -75,6 +133,10 @@ $(document).ready(function() {
         break;
       case 'error':
         console.error(data.message);
+        break;
+      case 'console':
+        var console_message = data.message;
+        $('#console-container').append('<p>' + console_message + '</p>');
         break;
       case 'track':
         url = data.message.url;
@@ -286,6 +348,10 @@ $(document).ready(function() {
     refreshTileSet(true)
   });
 
+  $('#open-console').click(function() {
+    $('#console-container').fadeIn()
+  });
+
   $('#start-initiative').click(function() {
     // Get the list of items in the battle turn order
     const $turnOrderItems = $('.turn-order-item');
@@ -383,6 +449,11 @@ $(document).ready(function() {
         }
       });
     });
+
+  $('#turn-order').on('click', '.turn-order-item', function() {
+    var entity_uid = $(this).data('id');
+    centerOnEntityId(entity_uid);
+  });
     
 
   $('#select-soundtrack').click(function() {
@@ -409,32 +480,7 @@ $(document).ready(function() {
   });
 
 
-$(function() {
-  var isDragging = false;
-  var lastX, lastY;
-
-  $('#battle-turn-order .header').mousedown(function(e) {
-    isDragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-  });
-
-  $(document).mousemove(function(e) {
-    if (isDragging) {
-      var deltaX = e.clientX - lastX;
-      var deltaY = e.clientY - lastY;
-      var offset = $('#battle-turn-order').offset();
-      $('#battle-turn-order').offset({
-        top: offset.top + deltaY,
-        left: offset.left + deltaX
-      });
-      lastX = e.clientX;
-      lastY = e.clientY;
-    }
-  }).mouseup(function() {
-    isDragging = false;
-  });
-});
+draggable('#battle-turn-order');
+draggable('#console-container');
 
 });
-

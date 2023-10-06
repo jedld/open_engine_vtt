@@ -2,7 +2,7 @@
   - layer.each_with_index do |row, row_index|
     %div{:style => "display: flex;"}
       - row.each_with_index do |tile, col_index|
-        .tile{:data => {:coords => {:x => col_index, :y => row_index, difficult: tile[:difficult]}}, :style => "top: #{row_index * tile_size_px}; left: #{col_index * tile_size_px}"}
+        .tile{:data => {:coords => {:x => col_index, :y => row_index, difficult: tile[:difficult], :id => tile[:id]}}, :style => "top: #{row_index * tile_size_px}; left: #{col_index * tile_size_px}"}
           - if tile[:entity].nil?
             %div{:style => "position: relative;"}
               %div{:style => "width: #{tile_size_px}px; height: #{tile_size_px}px;"}
@@ -35,5 +35,3 @@
               - if tile[:name].presence
                 %div.nameplate
                   = tile[:name]
-                  
-                  
