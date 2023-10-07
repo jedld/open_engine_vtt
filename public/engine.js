@@ -57,7 +57,6 @@ function centerOnTileXY(x, y) {
 }
 
 function centerOnEntityId(id) {
-  debugger;
   var tile = $('.tile[data-coords-id="' + id + '"]');
   centerOnTile(tile);
 }
@@ -137,6 +136,7 @@ $(document).ready(function() {
       case 'console':
         var console_message = data.message;
         $('#console-container').append('<p>' + console_message + '</p>');
+        $('#console-container').scrollTop($('#console-container')[0].scrollHeight);
         break;
       case 'track':
         url = data.message.url;
@@ -175,7 +175,9 @@ $(document).ready(function() {
         $('#end-battle').show();
         break;
       case 'stop':
+        $('#turn-order').html("");
         $('#battle-turn-order').fadeOut()
+        $('#start-initiative').show();
         $('#start-battle').show();
         $('#end-battle').hide();
         break;
@@ -212,8 +214,7 @@ $(document).ready(function() {
   
   // Use event delegation to handle popover menu clicks
   $('.tiles-container').on('click', '.tile', function() {
-
-
+    var tiles = $(this);
     if (moveMode) {
       // retrieve data attributes from the parent .tile element
       var coordsx = $(this).data('coords-x');
@@ -225,7 +226,19 @@ $(document).ready(function() {
       }
     } else {
       $('.tiles-container .popover-menu').hide();
-      $(this).find('.popover-menu').toggle();
+      var entity_uid = $(this).data('coords-id');
+      $.ajax({
+        url: '/actions',
+        type: 'GET',
+        data: { id: entity_uid },
+        success: function(data) {
+          $(tiles).find('.popover-menu').html(data);
+          $(tiles).find('.popover-menu').toggle();
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+          console.error('Error updating volume:', textStatus, errorThrown);
+        }
+      });
     }
   });
 
@@ -320,6 +333,7 @@ $(document).ready(function() {
     var coordsx = $(this).closest('.tile').data('coords-x');
     var coordsy = $(this).closest('.tile').data('coords-y');
     var item = $(this).data('item');
+
     if (item === 'move') {
       console.log('Menu item ' + item + ' clicked at X: ' + coordsx + ', Y: ' + coordsy);
       moveMode = true

@@ -40,6 +40,7 @@ class WebLogger
       output t(str_token, opportunity: event[:as_reaction] ? "Opportunity Attack: " : "",
                           source: show_name(event),
                           target: "#{event[:target].name}#{cover_str}",
+                          throws: event[:attack_thrown] ? "throws " : "",
                           attack_name: event[:attack_name],
                           advantage: advantage_str,
                           attack_roll: event[:attack_roll].to_s.colorize(:green),

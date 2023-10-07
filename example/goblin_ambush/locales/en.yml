@@ -205,7 +205,7 @@ en:
     athletics:
       failure: '%{roll} = %{value} (dc 10) %{name} failed on an athletics check'
       success: '%{roll} = %{value} (dc 10) %{name} succeeded on an athletics check'
-    attack: '%{opportunity}%{source} attacked %{target} with %{attack_name} to Hit%{advantage}: %{attack_roll} = %{attack_value} for %{damage} damage.'
+    attack: '%{opportunity}%{source} attacked %{target} with %{throws}%{attack_name} to Hit%{advantage}: %{attack_roll} = %{attack_value} for %{damage} damage.'
     attack_no_roll: '%{opportunity}%{source} attacked %{target} with %{attack_name} to Hit for %{damage} damage.'
     combat_end: Combat has ended
     combat_start: Combat has started!

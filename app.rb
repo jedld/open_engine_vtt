@@ -309,7 +309,7 @@ post "/next_turn" do
 
     current_turn = settings.battle.current_turn
     
-    while current_turn.dead?
+    while (current_turn.dead? || current_turn.unconscious?)
       current_turn.send(:resolve_trigger, :end_of_turn)
       
       settings.battle.end_turn
@@ -350,6 +350,12 @@ post "/stop" do
       socket.send({type: 'stop', message: { }}.to_json)
     end
   end
+end
+
+get "/actions" do
+  id = params[:id]
+  entity = settings.map.entity_by_uid(id)
+  haml :actions, locals: { entity: entity, battle: settings.battle, session: settings.map.session }
 end
 
 post "/logout" do
