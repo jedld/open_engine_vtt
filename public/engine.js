@@ -353,7 +353,15 @@ $(document).ready(function() {
 
   //floating menu interaction
   $('#expand-menu').click(function() {
-    $('#menu').toggle()
+    $('#menu').fadeIn();
+    $('#expand-menu').hide();
+    $('#collapse-menu').show();
+  })
+
+  $('#collapse-menu').click(function() {
+    $('#menu').fadeOut();
+    $('#expand-menu').show();
+    $('#collapse-menu').hide();
   })
 
   $('#start-battle').click(function() {
@@ -493,6 +501,24 @@ $(document).ready(function() {
     });
   });
 
+  $('.tiles-container').on('click', '.action-button', function() {
+    var action = $(this).data('action-type');
+    var opts = $(this).data('action-opts');
+    var entity_uid = $(this).closest('.tile').data('coords-id');
+    $.ajax({
+      url: '/action',
+      type: 'POST',
+      data: { id: entity_uid,
+              action: action,
+              opts: opts },
+      success: function(data) {
+        console.log('Action request successful:', data);
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        console.error('Error requesting action:', textStatus, errorThrown);
+      }
+    });
+  });
 
 draggable('#battle-turn-order');
 draggable('#console-container');

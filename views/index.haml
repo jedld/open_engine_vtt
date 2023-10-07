@@ -14,7 +14,10 @@
     %link{rel: "manifest", href: "/site.webmanifest"}
   %body{ :data => { soundtrack: soundtrack }}
     %div#floating-menu
-      %button#expand-menu{:style => "float: right; width: 100%;"} +
+      %button#expand-menu.menu-button
+        %span.glyphicon{:class => "glyphicon-menu-hamburger"}
+      %button#collapse-menu.menu-button{style: "display: none;"}
+        %span.glyphicon{:class => "glyphicon-menu-left"}
       %div#menu{:style => "display: none;"}
         %ul
           - if role.include? 'dm'

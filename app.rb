@@ -358,6 +358,17 @@ get "/actions" do
   haml :actions, locals: { entity: entity, battle: settings.battle, session: settings.map.session }
 end
 
+post '/action' do
+  content_type :json
+  action = params[:action]
+  entity = settings.map.entity_by_uid(params[:id])
+  binding.pry
+  build_map = if action == 'MoveAction'
+    MoveAction.build(settings.session, entity)
+  end
+  build_map.to_json
+end
+
 post "/logout" do
   session[:username] = nil
   redirect to('/login')

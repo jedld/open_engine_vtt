@@ -135,3 +135,10 @@ input.initiative-text {
 .turn-order-dead {
   color: red;
 }
+
+.menu-button{
+  float: right;
+  width: 100%;
+  background-color: transparent;
+  border: none;
+}

@@ -3,7 +3,7 @@
     %tr
       - actions.each do |action|
         %td
-          %button{ :class => "action-button", :data => { action: { type: action.class.to_s, opts: action.to_h } }, :title => action.label }
+          %button{ :class => "action-button", :data => { action: { type: action.class.to_s, opts: action.to_h.to_json } }, :title => action.label }
             -if action.try(:second_hand)
               %img{ :src => "actions/#{action.action_type}_second.png", :style => "width: 50px; height: 50px;"}
             -elsif action.try(:thrown)
