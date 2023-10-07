@@ -262,7 +262,9 @@ $(document).ready(function() {
     var coordsx = $(this).data('coords-x');
     var coordsy = $(this).data('coords-y');
     $('#coords-box').html('<p>X: ' + coordsx + '</p><p>Y: ' + coordsy + '</p>');
-    if (moveMode) {
+    
+    if (moveMode && 
+       (source.coordsx != coordsx || source.coordsy != coordsy)) {
       $.ajax({
         url: '/path',
         type: 'GET',
@@ -327,20 +329,6 @@ $(document).ready(function() {
     }
   });
 
-
-  $('.tiles-container').on('click', '.popover-menu li', function() {
-    // retrieve data attributes from the parent .tile element
-    var coordsx = $(this).closest('.tile').data('coords-x');
-    var coordsy = $(this).closest('.tile').data('coords-y');
-    var item = $(this).data('item');
-
-    if (item === 'move') {
-      console.log('Menu item ' + item + ' clicked at X: ' + coordsx + ', Y: ' + coordsy);
-      moveMode = true
-      source = {x: coordsx, y: coordsy}
-      $('.tiles-container .popover-menu').hide();
-    }
-  });
 
   $(document).on('keydown', function(event) {
     if (event.keyCode === 27) { // ESC key
@@ -501,10 +489,23 @@ $(document).ready(function() {
     });
   });
 
-  $('.tiles-container').on('click', '.action-button', function() {
+  var currentAction = null;
+  var currentIndex = 0;
+
+  $('.tiles-container').on('click', '.action-button', function(e) {
+    e.stopPropagation();
     var action = $(this).data('action-type');
     var opts = $(this).data('action-opts');
     var entity_uid = $(this).closest('.tile').data('coords-id');
+    var coordsx = $(this).closest('.tile').data('coords-x');
+    var coordsy = $(this).closest('.tile').data('coords-y');
+
+    // disable moveMode
+    if (moveMode) {
+      moveMode = false
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
     $.ajax({
       url: '/action',
       type: 'POST',
@@ -512,6 +513,19 @@ $(document).ready(function() {
               action: action,
               opts: opts },
       success: function(data) {
+        var actionObj = data;
+        if (data.param[0].type === 'movement') {
+          currentAction = function() {
+
+          }
+        
+          $('.tiles-container .popover-menu').hide();
+          moveMode = true
+          source = { x: coordsx, y: coordsy }
+        } else 
+        {
+          debugger
+        }
         console.log('Action request successful:', data);
       },
       error: function(jqXHR, textStatus, errorThrown) {

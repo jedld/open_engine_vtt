@@ -318,7 +318,6 @@ post "/next_turn" do
 
       if settings.battle.battle_ends?
         end_current_battle
-        return { status: 'tpk' }.to_json
       end
     end
 
@@ -331,7 +330,6 @@ post "/next_turn" do
     
     if settings.battle.battle_ends?
       end_current_battle
-      return { status: 'tpk' }.to_json
     end
     
     settings.sockets.each do |socket|
@@ -362,11 +360,23 @@ post '/action' do
   content_type :json
   action = params[:action]
   entity = settings.map.entity_by_uid(params[:id])
-  binding.pry
+  action_info = {}
   build_map = if action == 'MoveAction'
-    MoveAction.build(settings.session, entity)
-  end
-  build_map.to_json
+                MoveAction.build(game_session, entity)
+              elsif action == 'AttackAction'
+                action = AttackAction.new(game_session, entity, :attack)
+                action.using = params.dig(:opts, :using)
+
+                weapon_details = game_session.load_weapon(params.dig(:opts,:using))
+
+                action_info[:valid_targets] = (settings.battle || settings.map).valid_targets_for(entity, action).map do |target|
+                  [target.entity_uid, settings.map.entity_or_object_pos(entity)]
+                end.to_h
+                action_info[:total_targets] = 1
+                
+                action.build_map
+              end
+  action_info.merge(build_map.to_h).to_json
 end
 
 post "/logout" do
