@@ -17,6 +17,7 @@ require 'natural_20/web/json_renderer'
 
 require 'logger'
 require 'web_logger'
+require 'web_controller'
 
 Faye::WebSocket.load_adapter('thin')
 
@@ -26,6 +27,7 @@ logger.level = Logger::INFO
 Natural20::EventManager.standard_cli
 
 set :sockets, []
+set :controllers, {}
 
 set :session_secret, "fe9707b4704da2a96d0fd3cbbb465756e124b8c391c72a27ff32a062110de589"
 
@@ -87,6 +89,7 @@ set :ai_controller, nil
 set :current_soundtrack, nil
 set :logins, LOGINS
 set :timeout, 600
+set :waiting_for_user, false
 
 def create_2d_array(n, m)
   Array.new(n) { Array.new(m) { rand(1..4) } }
@@ -281,12 +284,22 @@ post "/battle" do
     status 400
     return { error: 'No entities in turn order' }.to_json
   end
-  settings.ai_controller =  AiController::Standard.new
-  settings.battle = Natural20::Battle.new(game_session, settings.map, settings.ai_controller)
+  
+  ai_controller =  AiController::Standard.new
+  web_controller = WebController.new
+
+  settings.battle = Natural20::Battle.new(game_session, settings.map, ai_controller)
 
   params[:battle_turn_order].values.each do |param_item|
     entity = settings.map.entity_by_uid(param_item['id'])
-    settings.battle.add(entity, param_item['group'].to_sym)
+
+    controller = if param_item['controller'] == 'ai'
+                   ai_controller
+                 else
+                   web_controller
+                 end
+
+    settings.battle.add(entity, param_item['group'].to_sym, controller: controller)
     entity.reset_turn!(settings.battle)
   end
   settings.battle.start
@@ -333,7 +346,18 @@ end
 
 post "/next_turn" do
   if settings.battle
+    
+    if settings.waiting_for_user
+      settings.waiting_for_user = false
+      current_turn.send(:resolve_trigger, :end_of_turn)
 
+      settings.battle.end_turn
+      result = settings.battle.next_turn
+      if settings.battle.battle_ends?
+        end_current_battle
+      end
+    end
+    
     settings.battle.start_turn
 
     current_turn = settings.battle.current_turn
@@ -343,24 +367,32 @@ post "/next_turn" do
       
       settings.battle.end_turn
       settings.battle.next_turn
+      
       current_turn = settings.battle.current_turn
+
 
       if settings.battle.battle_ends?
         end_current_battle
       end
     end
 
-    current_turn.reset_turn!(settings.battle)
-    ai_loop
-    current_turn.send(:resolve_trigger, :end_of_turn)
+    begin
+      current_turn.reset_turn!(settings.battle)
+      ai_loop
+      current_turn.send(:resolve_trigger, :end_of_turn)
 
-    settings.battle.end_turn
-    result = settings.battle.next_turn
-    
-    if settings.battle.battle_ends?
-      end_current_battle
+      settings.battle.end_turn
+      result = settings.battle.next_turn
+      
+
+      if settings.battle.battle_ends?
+        end_current_battle
+      end
+    rescue WebController::ManualControl => e
+      log.info("waiting for user to end turn.")
+      settings.waiting_for_user = true
     end
-    
+
     settings.sockets.each do |socket|
       socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
       socket.send({type: 'move', message: { id: current_turn.entity_uid }}.to_json)

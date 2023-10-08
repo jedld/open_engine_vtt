@@ -5,7 +5,7 @@
       %option{value: "a", selected: entity.is_a?(Natural20::PlayerCharacter)} Group A
       %option{value: "b", selected: !entity.is_a?(Natural20::PlayerCharacter)} Group B
       %option{value: "c"} Group C
-    %select.controller-select.form-control{style: "width: 50px;"}
+    %select.controller-select.form-control{style: "width: 100px;"}
       %option{value: "manual", selected: entity.is_a?(Natural20::PlayerCharacter)} Manual
       %option{value: "ai", selected: !entity.is_a?(Natural20::PlayerCharacter)} AI
     %button.remove-turn-order-item.btn.btn-danger{style: "width: 100px; margin-left: 10px;"} Remove

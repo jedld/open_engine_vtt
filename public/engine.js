@@ -51,6 +51,7 @@ $(document).ready(function () {
   }
 
   var ws = new WebSocket('ws://' + window.location.host + '/event');
+  
   function keepAlive(timeout = 5000) {
     if (ws.readyState == ws.OPEN) {
       ws.send(JSON.stringify({ type: 'ping', message: "ping" }));
@@ -415,7 +416,8 @@ $(document).ready(function () {
     const battle_turn_order = $turnOrderItems.map(function () {
       const id = $(this).data('id');
       const group = $(this).find('.group-select').val();
-      return { id, group };
+      const controller = $(this).find('.controller-select').val();
+      return { id, group, controller };
     }).get();
 
     // Call the POST /battle endpoint with the list of items in the battle turn order
