@@ -428,6 +428,12 @@ post '/action' do
   action_info.merge(build_map.to_h).to_json
 end
 
+get "/add" do
+  entity_uid = params[:id]
+  entity = settings.map.entity_by_uid(entity_uid)
+  haml :add, locals: { entity: entity }
+end
+
 post "/logout" do
   session[:username] = nil
   redirect to('/login')

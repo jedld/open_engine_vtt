@@ -241,8 +241,17 @@ $(document).ready(function() {
         type: 'GET',
         data: { id: entity_uid },
         success: function(data) {
-          $(tiles).find('.popover-menu').html(data);
-          $(tiles).find('.popover-menu').toggle();
+          var popoverMenuContainer = $(tiles).find('.popover-menu');
+          popoverMenuContainer.html(data);
+          popoverMenuContainer.toggle();
+
+          var tileRightEdge = popoverMenuContainer.offset().left + popoverMenuContainer.outerWidth();
+          var windowRightEdge = $(window).width();
+          
+          if (windowRightEdge < tileRightEdge ) {
+            var adjustTile = tileRightEdge - windowRightEdge;
+            popoverMenuContainer.css('left', '-=' + adjustTile);
+          }
         },
         error: function(jqXHR, textStatus, errorThrown) {
           console.error('Error updating volume:', textStatus, errorThrown);
@@ -473,27 +482,19 @@ $(document).ready(function() {
 
     if (index === -1) {
       battle_entity_list.push({ id, group: 'a', name });
-      $this.find('i.glyphicon').removeClass('glyphicon-plus').addClass('glyphicon-minus');
-      $this.css('background-color', 'red');
-      
-      // Add name to turn order list
-      const $turnOrder = $('#turn-order');
-      const $newItem = $('<div data-id="'+ id +'">').addClass('turn-order-item').text(name);
-      const $removeButton = $('<button>').addClass('remove-turn-order-item').text('Remove');
-      const $groupSelect = $('<select>').addClass('group-select').append(
-        $('<option>').val('a').text('Group A'),
-        $('<option>').val('b').text('Group B'),
-        $('<option>').val('c').text('Group C')
-      );
-      const $turnOrderItem = $('<div>').addClass('turn-order-item').append(
-        $('<span>').addClass('name').text(name),
-        $groupSelect,
-        $removeButton
-      );
-      $newItem.append($groupSelect);
-      $newItem.append($removeButton);
-      $turnOrder.append($newItem);
-      
+      $.ajax({
+        url: '/add',
+        type: 'GET',
+        data: { id: id },
+        success: function(data) {
+          $('#turn-order').append(data);
+          $this.find('i.glyphicon').removeClass('glyphicon-plus').addClass('glyphicon-minus');
+          $this.css('background-color', 'red');
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+          console.error('Error requesting turn order:', textStatus, errorThrown);
+        }
+      });
     } else {
       battle_entity_list.splice(index, 1);
       $this.find('i.glyphicon').removeClass('glyphicon-minus').addClass('glyphicon-plus');
@@ -580,7 +581,6 @@ $(document).ready(function() {
               action: action,
               opts: opts },
       success: function(data) {
-        var actionObj = data;
         switch (data.param[0].type) {
           case 'movement':
             moveModeCallback = function(path) {
