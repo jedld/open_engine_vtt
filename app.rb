@@ -38,6 +38,18 @@ helpers do
     login_info = settings.logins.find { |login| login["name"].downcase == session[:username] }
     login_info["role"]
   end
+
+  def commit_and_update(action)
+    if settings.battle
+      settings.battle.action!(action)
+      settings.battle.commit(action)
+    else
+      action.resolve(session, settings.map, battle: nil)
+    end
+    settings.sockets.each do |socket|
+      socket.send({type: 'move', message: { }}.to_json)
+    end
+  end
 end
 
 LEVEL = "example/goblin_ambush"
@@ -252,6 +264,10 @@ end
 # sample request: {"battle_turn_order"=>{"0"=>{"id"=>"f437404e-52f9-40d2-b7d4-d6390d397d30", "group"=>"a"}, "1"=>{"id"=>"afe24663-a079-4390-9fbb-c12218b46f7b", "group"=>"a"}}}::1 - - [02/Oct/2023:19:26:41 +0800] "POST /battle HTTP/1.1" 2
 post "/battle" do
   content_type :json
+  if params[:battle_turn_order].values.empty?
+    status 400
+    return { error: 'No entities in turn order' }.to_json
+  end
   settings.ai_controller =  AiController::Standard.new
   settings.battle = Natural20::Battle.new(game_session, settings.map, settings.ai_controller)
 
@@ -356,25 +372,58 @@ get "/actions" do
   haml :actions, locals: { entity: entity, battle: settings.battle, session: settings.map.session }
 end
 
+
+
 post '/action' do
   content_type :json
   action = params[:action]
   entity = settings.map.entity_by_uid(params[:id])
   action_info = {}
   build_map = if action == 'MoveAction'
-                MoveAction.build(game_session, entity)
+                if params[:path]
+                  move_path = params[:path].map do |index, coord|
+                                [index.to_i, [coord[0].to_i, coord[1].to_i]]
+                              end.sort_by { |item| item[0] }.map(&:last)
+                  action = MoveAction.new(game_session, entity, :move)
+                  action.move_path = move_path
+                  if settings.battle
+                    commit_and_update(action)
+                  else
+                    if (settings.map.placeable?(entity, move_path.last[0],move_path.last[1]))
+                      settings.map.move_to!(entity, *move_path.last, settings.battle)
+                      settings.sockets.each do |socket|
+                        socket.send({type: 'move', message: {from: move_path.first, to: move_path.last}}.to_json)
+                      end
+                    end
+                  end
+                  return { status: 'ok' }.to_json
+                else
+                  MoveAction.build(game_session, entity)
+                end
               elsif action == 'AttackAction'
+
                 action = AttackAction.new(game_session, entity, :attack)
                 action.using = params.dig(:opts, :using)
 
-                weapon_details = game_session.load_weapon(params.dig(:opts,:using))
-
-                action_info[:valid_targets] = (settings.battle || settings.map).valid_targets_for(entity, action).map do |target|
+                valid_targets = (settings.battle || settings.map).valid_targets_for(entity, action).map do |target|
                   [target.entity_uid, settings.map.entity_or_object_pos(entity)]
                 end.to_h
-                action_info[:total_targets] = 1
-                
-                action.build_map
+
+                weapon_details = game_session.load_weapon(params.dig(:opts,:using))
+                if params[:target]
+                  target = settings.map.entity_at(params[:target][:x].to_i, params[:target][:y].to_i)
+                  if valid_targets.key?(target&.entity_uid)
+                    action.target = target
+                    commit_and_update(action)
+                    return { status: 'ok' }.to_json
+                  end
+                else
+                  action_info[:valid_targets] = valid_targets
+                  action_info[:total_targets] = 1
+                  action_info[:range] = weapon_details[:range]
+                  action_info[:range_max] = weapon_details[:range_max] || weapon_details[:range]
+                  action.build_map
+                end
               end
   action_info.merge(build_map.to_h).to_json
 end

@@ -215,6 +215,13 @@ $(document).ready(function() {
   // Use event delegation to handle popover menu clicks
   $('.tiles-container').on('click', '.tile', function() {
     var tiles = $(this);
+    if (targetMode) {
+      var coordsx = $(this).data('coords-x');
+      var coordsy = $(this).data('coords-y');
+      targetModeCallback({x: coordsx, y: coordsy})
+      targetMode = false
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    } else
     if (moveMode) {
       // retrieve data attributes from the parent .tile element
       var coordsx = $(this).data('coords-x');
@@ -222,7 +229,9 @@ $(document).ready(function() {
       if (coordsx != source.x || coordsy != source.y) {
         moveMode = false
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ws.send(JSON.stringify({type: 'message', user: 'username', message: {action: "move", from: source, to: {x: coordsx, y: coordsy} }}));
+        moveModeCallback(movePath)
+        movePath = []
+      //  ws.send(JSON.stringify({type: 'message', user: 'username', message: {action: "move", from: source, to: {x: coordsx, y: coordsy} }}));
       }
     } else {
       $('.tiles-container .popover-menu').hide();
@@ -242,7 +251,11 @@ $(document).ready(function() {
     }
   });
 
-  var moveMode = false;
+  var moveMode = false, targetMode = false;
+  var movePath = [];
+  var targetModeCallback = null;
+  var moveModeCallback = null;
+  var targetModeMaxRange = 0;
   var source = null;
   var battle_setup = false;
   var battle_entity_list = [];
@@ -262,7 +275,54 @@ $(document).ready(function() {
     var coordsx = $(this).data('coords-x');
     var coordsy = $(this).data('coords-y');
     $('#coords-box').html('<p>X: ' + coordsx + '</p><p>Y: ' + coordsy + '</p>');
-    
+    if (targetMode) {
+      $('.highlighted').removeClass('highlighted'); 
+      var currentDistance = Math.floor(Utils.euclideanDistance(source.x, source.y, coordsx, coordsy)) * 5;
+      var scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 5;
+
+      var x = coordsx;
+      var y = coordsy;
+      var sourceTile = $('.tile[data-coords-x="' + source.x + '"][data-coords-y="' + source.y + '"]');
+      var tile = $('.tile[data-coords-x="' + x + '"][data-coords-y="' + y + '"]');
+      var sourceTileRect = sourceTile[0].getBoundingClientRect();
+      var tileRect = tile[0].getBoundingClientRect();
+
+      var srcCenterX = sourceTileRect.left + sourceTileRect.width / 2 + scrollLeft;
+      var srcCenterY = sourceTileRect.top + sourceTileRect.height / 2 + scrollTop;
+
+      var centerX = tileRect.left + tileRect.width / 2 + scrollLeft;
+      var centerY = tileRect.top + tileRect.height / 2 + scrollTop;
+      ctx.moveTo(srcCenterX, srcCenterY);
+      ctx.lineTo(centerX, centerY);
+
+      var arrowSize = 10;
+      var angle = Math.atan2(centerY - srcCenterY, centerX - srcCenterX);
+      var within_range = Math.floor(currentDistance) <= targetModeMaxRange;
+
+      if (within_range) {
+        ctx.moveTo(centerX - arrowSize * Math.cos(angle - Math.PI / 6), centerY - arrowSize * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(centerX, centerY);
+        ctx.lineTo(centerX - arrowSize * Math.cos(angle + Math.PI / 6), centerY - arrowSize * Math.sin(angle + Math.PI / 6));
+      } else {
+        ctx.moveTo(centerX - arrowSize, centerY - arrowSize);
+        ctx.lineTo(centerX + arrowSize, centerY + arrowSize);
+        ctx.moveTo(centerX + arrowSize, centerY - arrowSize);
+        ctx.lineTo(centerX - arrowSize, centerY + arrowSize);
+      }
+
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "red";
+
+      ctx.fillText(currentDistance + "ft", centerX, centerY  +  tileRect.height / 2);
+
+      ctx.stroke();
+    } else
     if (moveMode && 
        (source.coordsx != coordsx || source.coordsy != coordsy)) {
       $.ajax({
@@ -285,6 +345,9 @@ $(document).ready(function() {
           ctx.beginPath();
           ctx.strokeStyle = 'red';
           ctx.lineWidth = 5;
+
+          movePath = data.path
+
           data.path.forEach(function(coords, index) {
             var x = coords[0];
             var y = coords[1];
@@ -333,7 +396,11 @@ $(document).ready(function() {
   $(document).on('keydown', function(event) {
     if (event.keyCode === 27) { // ESC key
       if (moveMode) {
-        moveMode = false
+        moveMode = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+      if (targetMode) {
+        targetMode = false;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     }
@@ -514,17 +581,55 @@ $(document).ready(function() {
               opts: opts },
       success: function(data) {
         var actionObj = data;
-        if (data.param[0].type === 'movement') {
-          currentAction = function() {
+        switch (data.param[0].type) {
+          case 'movement':
+            moveModeCallback = function(path) {
+              $.ajax({
+                url: '/action',
+                type: 'POST',
+                data: { id: entity_uid,
+                        action: action,
+                        opts: opts,
+                        path: path },
+                success: function(data) {
+                  console.log('Action request successful:', data);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                  console.error('Error requesting action:', textStatus, errorThrown);
+                }
+              });
+            }
 
-          }
-        
-          $('.tiles-container .popover-menu').hide();
-          moveMode = true
-          source = { x: coordsx, y: coordsy }
-        } else 
-        {
-          debugger
+            $('.tiles-container .popover-menu').hide();
+            moveMode = true
+            source = { x: coordsx, y: coordsy }
+            break;
+          case 'select_target':
+            $('.tiles-container .popover-menu').hide();
+            targetMode = true
+            source = { x: coordsx, y: coordsy }
+            targetModeMaxRange = data.range_max
+            targetModeCallback = function(target) {
+              $.ajax({
+                url: '/action',
+                type: 'POST',
+                data: { id: entity_uid,
+                        action: action,
+                        opts: opts,
+                        target: target },
+                success: function(data) {
+                  console.log('Action request successful:', data);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                  console.error('Error requesting action:', textStatus, errorThrown);
+                }
+              });
+            }
+
+            break;
+          default:
+            debugger
+            console.log('Unknown action type:', data.param[0].type);
         }
         console.log('Action request successful:', data);
       },
