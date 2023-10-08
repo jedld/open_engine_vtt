@@ -49,6 +49,7 @@ helpers do
     settings.sockets.each do |socket|
       socket.send({type: 'move', message: { }}.to_json)
     end
+    game_session.save_game(settings.battle, settings.map)
   end
 end
 
@@ -69,10 +70,19 @@ SOUNDTRACKS = index_hash["soundtracks"]
 LOGINS = index_hash["logins"]
 
 game_session = Natural20::Session.new_session(LEVEL)
-battlemap = Natural20::BattleMap.new(game_session, BATTLEMAP)
 
-set :map, battlemap
-set :battle, nil
+if game_session.has_save_game?
+  state = game_session.load_save
+  if (state[:battle])
+    set :battle, state[:battle]
+    set :map, state[:map]
+  end
+else
+  battlemap = Natural20::BattleMap.new(game_session, BATTLEMAP)
+  set :map, battlemap
+  set :battle, nil
+end
+
 set :ai_controller, nil
 set :current_soundtrack, nil
 set :logins, LOGINS
@@ -355,6 +365,7 @@ post "/next_turn" do
       socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
       socket.send({type: 'move', message: { id: current_turn.entity_uid }}.to_json)
     end
+    game_session.save_game(settings.battle, settings.map)
   end
 end
 

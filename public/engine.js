@@ -631,4 +631,7 @@ $(document).ready(function () {
   Utils.draggable('#battle-turn-order');
   Utils.draggable('#console-container');
 
+  if ($('body').data('battle-in-progress')) {
+    $('#start-initiative').hide();
+  }
 });
