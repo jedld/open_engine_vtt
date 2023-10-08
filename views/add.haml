@@ -1,10 +1,13 @@
-.card.turn-order-item{data: { id: entity.entity_uid }}
+.turn-order-item{data: { id: entity.entity_uid }}
   %form.form-inline
     %img{src: "assets/#{entity.token_image}", style: "max-width: 75px;"}
     %select.group-select.form-control{style: "width: 100px;"}
-      %option{value: "a"} Group A
-      %option{value: "b"} Group B
+      %option{value: "a", selected: entity.is_a?(Natural20::PlayerCharacter)} Group A
+      %option{value: "b", selected: !entity.is_a?(Natural20::PlayerCharacter)} Group B
       %option{value: "c"} Group C
+    %select.controller-select.form-control{style: "width: 50px;"}
+      %option{value: "manual", selected: entity.is_a?(Natural20::PlayerCharacter)} Manual
+      %option{value: "ai", selected: !entity.is_a?(Natural20::PlayerCharacter)} AI
     %button.remove-turn-order-item.btn.btn-danger{style: "width: 100px; margin-left: 10px;"} Remove
   %span{style: "width: 100px"}= entity.name
 

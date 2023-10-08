@@ -70,7 +70,7 @@ LOGINS = index_hash["logins"]
 
 game_session = Natural20::Session.new_session(LEVEL)
 battlemap = Natural20::BattleMap.new(game_session, BATTLEMAP)
-renderer = Natural20::Web::JsonRenderer.new(battlemap, nil)
+
 set :map, battlemap
 set :battle, nil
 set :ai_controller, nil
@@ -153,8 +153,10 @@ get '/' do
     width = image.width
     height = image.height
 
+    renderer = Natural20::Web::JsonRenderer.new(settings.map, settings.battle)
     @my_2d_array = [renderer.render]
-    logger.info @my_2d_array
+
+    # logger.info @my_2d_array
 
     tiles_dimenstion_height = HEIGHT * TILE_PX
     tiles_dimenstion_width = WIDTH * TILE_PX
@@ -169,6 +171,7 @@ get '/' do
 end
 
 get '/update' do
+  renderer = Natural20::Web::JsonRenderer.new(settings.map, settings.battle)
   @my_2d_array = [renderer.render]
   haml :map, locals: { tiles: @my_2d_array, tile_size_px: TILE_PX, is_setup: (params[:is_setup] == 'true')}
 end
@@ -431,7 +434,23 @@ end
 get "/add" do
   entity_uid = params[:id]
   entity = settings.map.entity_by_uid(entity_uid)
-  haml :add, locals: { entity: entity }
+  
+  if settings.battle
+    default_group = if entity.is_a?(Natural20::PlayerCharacter)
+                      :a
+                    else
+                      :b
+                    end
+
+    settings.battle.add(entity, default_group)
+    settings.sockets.each do |socket|
+      socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
+    end
+
+    return ""
+  else
+    haml :add, locals: { entity: entity }
+  end
 end
 
 post "/logout" do

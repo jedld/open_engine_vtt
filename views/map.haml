@@ -21,7 +21,7 @@
               - image_size_px = tile_size_px * multiplier
 
               %img.npc{:src => "assets/#{tile[:entity]}", :style => "width: #{image_size_px}px; height: #{image_size_px}px;  opacity: #{tile[:dead] ? 0.3 : 1}; filter: #{tile[:unconscious] ? 'grayscale(100%)' : 'none'}; "}
-              - if is_setup
+              - if is_setup && !tile[:in_battle]
                 %button.btn.add-to-turn-order{:class => "button text-center", :style => "top: 7px; right: 0;", :data => {:id => tile[:id], :name => tile[:name]}}
                   %i.glyphicon.glyphicon-plus
               %div{:class => "popover-menu", :style => "display: none;"}

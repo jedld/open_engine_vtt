@@ -2,12 +2,17 @@
   %span.col-1.text-leftcenter{style: "margin: 5px;"}
     %button#next-turn{style: "width: 220px;"} 
       %span Next Turn
+    %button#add-more{style: "width: 75px; background: none; border: none;"}
+      %span.glyphicon.glyphicon-plus{style: "margin-right: 5px;"}
   - battle.combat_order.each_with_index do |entity, index|
     %div.turn-order-item.row.border-bottom{class: "#{index == battle.current_turn_index ? 'bg-primary text-white' : ''} #{entity.dead? ? 'turn-order-dead' : ''}", data: { id: entity.entity_uid }}
-      %span.col-2
-        %img{src: "assets/#{entity.token_image}", style: "max-width: 50px;"}
-      %span.col-6
-        %span #{entity.name}
-      %span.col-3.text-right
+      %form.form-inline
+        %img{src: "assets/#{entity.token_image}", style: "max-width: 75px;"}
+        %select.group-select.form-control{style: "width: 100px;"}
+          %option{value: "a"} Group A
+          %option{value: "b"} Group B
+          %option{value: "c"} Group C
+        %span.col-3.text-right
+        %button.remove-turn-order-item.btn.btn-danger{style: "width: 100px; margin-left: 10px;"} Remove
         %input.initiative-text{type: "text", value: battle.entities[entity][:initiative], name: "initiative[#{index}]", style: "max-width: 50px;"}
-
+      %span{style: "width: 100px"}= entity.name
