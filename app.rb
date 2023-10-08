@@ -31,6 +31,25 @@ set :controllers, {}
 
 set :session_secret, "fe9707b4704da2a96d0fd3cbbb465756e124b8c391c72a27ff32a062110de589"
 
+
+
+LEVEL = "example/goblin_ambush"
+
+
+index_file = File.read(File.join(LEVEL, 'index.json'))
+index_hash = JSON.parse(index_file)
+
+TITLE = index_hash["title"]
+TILE_PX = index_hash["tile_size"].to_i
+HEIGHT = index_hash["height"].to_i
+WIDTH = index_hash["width"].to_i
+BACKGROUND = index_hash["background"]
+LOGIN_BACKGROUND = index_hash["login_background"]
+BATTLEMAP = index_hash["map"]
+SOUNDTRACKS = index_hash["soundtracks"]
+LOGINS = index_hash["logins"]
+CONTROLLERS = index_hash["default_controllers"]
+
 helpers do
   def logged_in?
     !session[:username].nil?
@@ -53,23 +72,21 @@ helpers do
     end
     game_session.save_game(settings.battle, settings.map)
   end
+
+  def describe_terrain(tile)
+    description = []
+    description += "Difficult Terrain" if tile[:difficult]
+    description += settings.map.thing_at(tile[:x], tile[:y]).map(&:label)
+    description.map do |d| "<p>#{d}</p>" end.join.html_safe
+  end
+
+  def controller_of?(entity_uid, username)
+    ctrl_info = CONTROLLERS.each.find { |controller| controller['entity_uid'] == entity_uid }
+    return false unless ctrl_info
+
+    ctrl_info['controllers'].include?(username)
+  end
 end
-
-LEVEL = "example/goblin_ambush"
-
-
-index_file = File.read(File.join(LEVEL, 'index.json'))
-index_hash = JSON.parse(index_file)
-
-TITLE = index_hash["title"]
-TILE_PX = index_hash["tile_size"].to_i
-HEIGHT = index_hash["height"].to_i
-WIDTH = index_hash["width"].to_i
-BACKGROUND = index_hash["background"]
-LOGIN_BACKGROUND = index_hash["login_background"]
-BATTLEMAP = index_hash["map"]
-SOUNDTRACKS = index_hash["soundtracks"]
-LOGINS = index_hash["logins"]
 
 game_session = Natural20::Session.new_session(LEVEL)
 
@@ -180,6 +197,7 @@ get '/' do
                            battle: settings.battle,
                            soundtrack: settings.current_soundtrack,
                            title: TITLE,
+                           username: session[:username],
                            role: user_role}
 end
 
@@ -191,10 +209,17 @@ end
 
 get '/event' do
   if Faye::WebSocket.websocket?(request.env)
+    username = request.env['rack.request.query_hash']['username']
+    puts  request.env['rack.request.query_hash']
+    # cookie passed via const ws = new WebSocket(`ws://${window.location.host}/event`, [`_session_id=${sessionCookie}`]);
     ws = Faye::WebSocket.new(request.env)
 
     ws.on :open do |event|
-      logger.info("open #{ws}")
+      logger.info("open #{ws} for #{username}")
+      
+      settings.controllers[username] ||= WebController.new(username, ws)
+      settings.controllers[username].update_socket(ws)
+
       settings.sockets << ws
       ws.send({type: 'info', message: ''}.to_json)
     end
@@ -415,7 +440,11 @@ end
 get "/actions" do
   id = params[:id]
   entity = settings.map.entity_by_uid(id)
-  haml :actions, locals: { entity: entity, battle: settings.battle, session: settings.map.session }
+  if (user_role.include?('dm') || controller_of?(id, session[:username]))
+    haml :actions, locals: { entity: entity, battle: settings.battle, session: settings.map.session }
+  else
+    halt 403
+  end
 end
 
 

@@ -7,6 +7,10 @@ class WebController < Natural20::Controller
         @socket = socket
     end
 
+    def update_socket(socket)
+        @socket = socket
+    end
+
     def roll_for(entity, die_type, number_of_times, description, advantage: false, disadvantage: false)
     end
 

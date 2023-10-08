@@ -50,7 +50,8 @@ $(document).ready(function () {
     $('.volume-slider').val(active_background_sound.volume * 100);
   }
 
-  var ws = new WebSocket('ws://' + window.location.host + '/event');
+  const username = $('body').data('username');
+  const ws = new WebSocket(`ws://${window.location.host}/event?username=${username}`);
   
   function keepAlive(timeout = 5000) {
     if (ws.readyState == ws.OPEN) {
@@ -252,10 +253,13 @@ $(document).ready(function () {
   body.appendChild(canvas);
   var ctx = canvas.getContext('2d');
 
+  
+
   $('.tiles-container').on('mouseover', '.tile', function () {
     var coordsx = $(this).data('coords-x');
     var coordsy = $(this).data('coords-y');
-    $('#coords-box').html('<p>X: ' + coordsx + '</p><p>Y: ' + coordsy + '</p>');
+    var tooltip = $(this).data('tooltip');
+    $('#coords-box').html('<p>X: ' + coordsx + '</p><p>Y: ' + coordsy + '</p>' + tooltip);
     if (targetMode) {
       $('.highlighted').removeClass('highlighted');
       var currentDistance = Math.floor(Utils.euclideanDistance(source.x, source.y, coordsx, coordsy)) * 5;

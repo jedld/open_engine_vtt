@@ -23,5 +23,15 @@
       "password" : "admin",
       "role" : ["dm"]
     }
+  ],
+  "default_controllers": [
+    {
+      "entity_uid" : "gomerin",
+      "controllers" : ["gomerin"]
+    },
+    {
+      "entity_uid": "crysania",
+      "controllers": ["crysania"]
+    }
   ]
 }
