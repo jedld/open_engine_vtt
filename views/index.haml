@@ -54,6 +54,17 @@
           != haml :battle, :locals => {battle: battle}
     %div#console-container{:style => "display: none;"}
       %div.header{:style => "cursor: move; "} Combat Log
+    %div.game-turn-container{style: "display: none;"}
+      - if battle && battle.current_turn
+        %img.current-turn-img{src: "/assets/#{battle.current_turn.token_image}", style: "max-width: 75px;"}
+        %button.btn.btn-primary#player-end-turn End Turn
+        .indicator-container
+          %div.indicator.action{style: "background-color: blue;", title: "Action", data: { toggle: "tooltip", placement: "top"}}
+            %span 1
+          %div.indicator.bonus-action{style: "background-color: green", title: "Bonus Action", data: {toggle: "tooltip", placement: "top"}}
+            %span 1
+          %div.indicator.movement{style: "background-color: teal", title: "Movement", data: {toggle: "tooltip", placement: "top"}}
+            %span 1
     
                   
                 

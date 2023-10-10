@@ -142,3 +142,37 @@ input.initiative-text {
   background-color: transparent;
   border: none;
 }
+
+.game-turn-container {
+  position: absolute;
+  width: 300px;
+  top: 0;
+  left: 50%;
+  z-index: 5;
+  transform: translate(-50%, 0);
+}
+
+.game-turn-container button {
+  width: 200px
+}
+
+.game-turn-container .indicator-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.game-turn-container .indicator-container .indicator {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-turn-container .indicator span {
+  font-size: 30px;
+  color: white;
+
+}
