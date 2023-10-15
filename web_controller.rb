@@ -19,6 +19,7 @@ class WebController < Natural20::Controller
     # @param battle [Natural20::Battle] An instance of the current battle
     # @return [Array(Natural20::Action)]
     def move_for(entity, battle)
+        @socket.send({type: 'turn', message: { id: entity.entity_uid} }.to_json)
         raise WebController::ManualControl.new
     end
 end

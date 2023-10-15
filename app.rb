@@ -81,10 +81,17 @@ helpers do
   end
 
   def controller_of?(entity_uid, username)
-    ctrl_info = CONTROLLERS.each.find { |controller| controller['entity_uid'] == entity_uid }
-    return false unless ctrl_info
+    owners = entity_owners(entity_uid)
 
-    ctrl_info['controllers'].include?(username)
+    return false unless owners
+
+    owners.include?(username)
+  end
+
+  def entity_owners(entity_uid)
+    ctrl_info = CONTROLLERS.each.find { |controller| controller['entity_uid'] == entity_uid }
+    return [] unless ctrl_info
+    ctrl_info['controllers']
   end
 end
 
@@ -198,7 +205,8 @@ get '/' do
                            soundtrack: settings.current_soundtrack,
                            title: TITLE,
                            username: session[:username],
-                           role: user_role}
+                           role: user_role
+                          }
 end
 
 get '/update' do
@@ -311,7 +319,6 @@ post "/battle" do
   end
   
   ai_controller =  AiController::Standard.new
-  web_controller = WebController.new
 
   settings.battle = Natural20::Battle.new(game_session, settings.map, ai_controller)
 
@@ -321,7 +328,12 @@ post "/battle" do
     controller = if param_item['controller'] == 'ai'
                    ai_controller
                  else
-                   web_controller
+                  usernames = entity_owners(entity)
+                  if usernames.blank?
+                    settings.controllers["dm"]
+                  else
+                    settings.controllers[usernames.first]
+                  end
                  end
 
     settings.battle.add(entity, param_item['group'].to_sym, controller: controller)
@@ -414,7 +426,7 @@ post "/next_turn" do
         end_current_battle
       end
     rescue WebController::ManualControl => e
-      log.info("waiting for user to end turn.")
+      logger.info("waiting for user to end turn.")
       settings.waiting_for_user = true
     end
 
@@ -523,6 +535,10 @@ get "/add" do
   else
     haml :add, locals: { entity: entity }
   end
+end
+
+get "/turn" do
+  haml :turn, locals: { battle: settings.battle }
 end
 
 post "/logout" do

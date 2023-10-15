@@ -88,6 +88,20 @@ $(document).ready(function () {
     });
   }
 
+  function refreshTurn() {
+    $.ajax({
+      url: '/turn',
+      type: 'GET',
+      success: function (data) {
+        $('.game-turn-container').html(data);
+        $('.game-turn-container').toggle()
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.error('Error refreshing turn:', textStatus, errorThrown);
+      }
+    });
+  }
+
   keepAlive()
   refreshTileSet()
 
@@ -115,6 +129,9 @@ $(document).ready(function () {
         url = data.message.url;
         track_id = data.message.track_id;
         playSound(url, track_id);
+        break;
+      case 'turn':
+        refreshTurn();
         break;
       case 'stoptrack':
         if (active_background_sound) {
