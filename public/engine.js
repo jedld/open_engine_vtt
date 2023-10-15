@@ -650,6 +650,21 @@ $(document).ready(function () {
 
   });
 
+  $('.game-turn-container').on('click', '#player-end-turn', function() {
+    $.ajax({
+      url: '/end_turn',
+      type: 'POST',
+      data: {
+      },
+      success: function (data) {
+        $('.game-turn-container').hide()
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        console.error('Error requesting action:', textStatus, errorThrown);
+      }
+    });
+  });
+
 
   Utils.draggable('#battle-turn-order');
   Utils.draggable('#console-container');

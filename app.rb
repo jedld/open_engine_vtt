@@ -381,6 +381,17 @@ def end_current_battle
   end
 end
 
+post "/end_turn" do
+  content_type :json
+  settings.battle.end_turn
+  settings.battle.next_turn
+  settings.sockets.each do |socket|
+    socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
+    socket.send({type: 'move', message: { id: current_turn.entity_uid }}.to_json)
+  end
+  { status: 'ok' }.to_json
+end
+
 post "/next_turn" do
   if settings.battle
     
