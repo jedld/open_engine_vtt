@@ -81,6 +81,7 @@ $(document).ready(function () {
       type: 'GET',
       success: function (data) {
         $('#turn-order').html(data);
+        $('#battle-turn-order').show();
       },
       error: function (jqXHR, textStatus, errorThrown) {
         console.error('Error refreshing turn order:', textStatus, errorThrown);
@@ -94,7 +95,7 @@ $(document).ready(function () {
       type: 'GET',
       success: function (data) {
         $('.game-turn-container').html(data);
-        $('.game-turn-container').toggle()
+        $('.game-turn-container').show()
       },
       error: function (jqXHR, textStatus, errorThrown) {
         console.error('Error refreshing turn:', textStatus, errorThrown);
@@ -166,6 +167,7 @@ $(document).ready(function () {
         break;
       case 'stop':
         $('#turn-order').html("");
+        $('.game-turn-container').hide();
         $('#battle-turn-order').fadeOut()
         $('#start-initiative').show();
         $('#start-battle').show();
@@ -665,6 +667,21 @@ $(document).ready(function () {
     });
   });
 
+  $('.floating-window').on('click', function() {
+    var fwindow = $(this);
+    var maxZIndex = 0;
+    
+    // Find the highest z-index value among all floating windows
+    $('.floating-window').each(function() {
+      var zIndex = parseInt($(this).css('z-index'));
+      if (zIndex > maxZIndex) {
+        maxZIndex = zIndex;
+      }
+    });
+    
+    // Set the clicked floating window's z-index to be higher than all others
+    fwindow.css('z-index', maxZIndex + 1);
+  });
 
   Utils.draggable('#battle-turn-order');
   Utils.draggable('#console-container');

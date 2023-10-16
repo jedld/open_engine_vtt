@@ -46,15 +46,15 @@
           %div.modal-footer
             %button.btn.btn-default{"data-dismiss" => "modal", :type => "button"} Close
             %button.btn.btn-primary{:type => "button"} Save changes
-    %div#battle-turn-order{ :style => "#{battle.nil? ? 'display: none' : ''}"}
+    %div#battle-turn-order.floating-window{ :style => "#{battle.nil? ? 'display: none' : ''}"}
       %div.header{:style => "cursor: move; "} Battle Turn Order
       %button#start-initiative.btn.btn-primary{:style => "margin-top: 20px;"} Roll Initiative!
       %div#turn-order
         - if battle
           != haml :battle, :locals => {battle: battle}
-    %div#console-container{:style => "display: none;"}
+    %div#console-container.floating-window{:style => "display: none;"}
       %div.header{:style => "cursor: move; "} Combat Log
-    %div.game-turn-container{style: "display: none;"}
+    %div.game-turn-container.floating-window{style: "display: none;"}
       - if battle && controller_of?(battle.current_turn.entity_uid, username)
         != haml :turn, :locals => {battle: battle}    
                   

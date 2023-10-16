@@ -70,7 +70,7 @@ helpers do
     settings.sockets.each do |socket|
       socket.send({type: 'move', message: { }}.to_json)
     end
-    game_session.save_game(settings.battle, settings.map)
+    # game_session.save_game(settings.battle, settings.map)
   end
 
   def describe_terrain(tile)
@@ -93,21 +93,35 @@ helpers do
     return [] unless ctrl_info
     ctrl_info['controllers']
   end
+
+  def action_flavors(action)
+    if action.try(:second_hand)
+      "_second"
+    elsif action.try(:unarmed?)
+       "_melee"
+    elsif action.try(:thrown)
+       "_thrown"
+    elsif action.try(:ranged_attack?)
+       "_ranged"
+    else
+      ""
+    end
+  end
 end
 
 game_session = Natural20::Session.new_session(LEVEL)
 
-if game_session.has_save_game?
-  state = game_session.load_save
-  if (state[:battle])
-    set :battle, state[:battle]
-    set :map, state[:map]
-  end
-else
+# if game_session.has_save_game?
+#   state = game_session.load_save
+#   if (state[:battle])
+#     set :battle, state[:battle]
+#     set :map, state[:map]
+#   end
+# else
   battlemap = Natural20::BattleMap.new(game_session, BATTLEMAP)
   set :map, battlemap
   set :battle, nil
-end
+# end
 
 set :ai_controller, nil
 set :current_soundtrack, nil
@@ -328,7 +342,7 @@ post "/battle" do
     controller = if param_item['controller'] == 'ai'
                    ai_controller
                  else
-                  usernames = entity_owners(entity)
+                  usernames = entity_owners(entity.entity_uid)
                   if usernames.blank?
                     settings.controllers["dm"]
                   else
@@ -385,16 +399,19 @@ post "/end_turn" do
   content_type :json
   settings.battle.end_turn
   settings.battle.next_turn
+  current_turn = settings.battle.current_turn
+
   settings.sockets.each do |socket|
     socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
     socket.send({type: 'move', message: { id: current_turn.entity_uid }}.to_json)
   end
+
   { status: 'ok' }.to_json
 end
 
 post "/next_turn" do
   if settings.battle
-    
+    current_turn = settings.battle.current_turn
     if settings.waiting_for_user
       settings.waiting_for_user = false
       current_turn.send(:resolve_trigger, :end_of_turn)
@@ -470,8 +487,6 @@ get "/actions" do
   end
 end
 
-
-
 post '/action' do
   content_type :json
   action = params[:action]
@@ -521,6 +536,13 @@ post '/action' do
                   action_info[:range] = weapon_details[:range]
                   action_info[:range_max] = weapon_details[:range_max] || weapon_details[:range]
                   action.build_map
+                end
+              else
+                build_map = Object.const_get(action).build(game_session, entity)
+                if build_map.param.nil?
+                  action = build_map.next.call()
+                  commit_and_update(action)
+                  return { status: 'ok' }.to_json
                 end
               end
   action_info.merge(build_map.to_h).to_json

@@ -385,7 +385,8 @@ unarmed_attack:
     noise_target: 5
   modifiers: null
   name: Unarmed Attack
-  properties: null
+  properties:
+    - unarmed
   range: 5
   subtype: weapon
   type: melee_attack
