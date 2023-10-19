@@ -10,6 +10,11 @@ For now only a simple battle sim is supported:
 To start
 ---------
 
+Install debian packages for image processing
+```
+sudo apt-get install pngcrush pngquant jpegoptim gifsicle advpng
+```
+
 
 ```bash
 bundle

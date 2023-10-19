@@ -15,6 +15,9 @@ gem 'sinatra-websocket'
 gem 'mini_magick'
 gem 'sinatra-contrib'
 gem 'faye-websocket'
+gem 'mini_magick'
+gem 'image_optim'
+
 # gem 'natural_20', git: "https://github.com/jedld/natural_20.git", ref: "15ddc062bd104888f4aaa0348ecd249c8aa13e4a"
 gem 'natural_20', path: "../natural_20"
 gem "solargraph", group: :development
