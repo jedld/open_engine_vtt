@@ -400,7 +400,8 @@ post "/end_turn" do
   settings.battle.end_turn
   settings.battle.next_turn
   current_turn = settings.battle.current_turn
-
+  settings.waiting_for_user = false
+  
   settings.sockets.each do |socket|
     socket.send({type: 'initiative', message: { index: settings.battle.current_turn_index }}.to_json)
     socket.send({type: 'move', message: { id: current_turn.entity_uid }}.to_json)
