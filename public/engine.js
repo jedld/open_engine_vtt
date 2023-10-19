@@ -19,11 +19,14 @@ function centerOnTile(tile) {
   $('html, body').animate({
     scrollLeft: scrollLeft,
     scrollTop: scrollTop
-  }, 500);
+  }, 500, function() {
+    tile.fadeOut(150).fadeIn(150).fadeOut(150).fadeIn(150).fadeOut(150).fadeIn(150);
+  });
+  
 }
 
 function centerOnTileXY(x, y) {
-  var tile = $('.tile[data-coords][data-coords-x="' + x + '"][data-coords-y="' + y + '"]');
+  var tile = $('.tile[data-coords-x="' + x + '"][data-coords-y="' + y + '"]');
   centerOnTile(tile);
 }
 
@@ -134,6 +137,11 @@ $(document).ready(function () {
       case 'turn':
         refreshTurn();
         break;
+      case 'focus':
+        var x = data.message.x;
+        var y = data.message.y;
+        centerOnTileXY(x, y);
+        break;
       case 'stoptrack':
         if (active_background_sound) {
           const audioCtx = new AudioContext();
@@ -205,7 +213,7 @@ $(document).ready(function () {
   });
 
   // Use event delegation to handle popover menu clicks
-  $('.tiles-container').on('click', '.tile', function () {
+  $('.tiles-container').on('click', '.tile', function (e) {
     var tiles = $(this);
     if (targetMode) {
       var coordsx = $(this).data('coords-x');
@@ -226,29 +234,46 @@ $(document).ready(function () {
           //  ws.send(JSON.stringify({type: 'message', user: 'username', message: {action: "move", from: source, to: {x: coordsx, y: coordsy} }}));
         }
       } else {
-        $('.tiles-container .popover-menu').hide();
-        var entity_uid = $(this).data('coords-id');
-        $.ajax({
-          url: '/actions',
-          type: 'GET',
-          data: { id: entity_uid },
-          success: function (data) {
-            var popoverMenuContainer = $(tiles).find('.popover-menu');
-            popoverMenuContainer.html(data);
-            popoverMenuContainer.toggle();
 
-            var tileRightEdge = popoverMenuContainer.offset().left + popoverMenuContainer.outerWidth();
-            var windowRightEdge = $(window).width();
-
-            if (windowRightEdge < tileRightEdge) {
-              var adjustTile = tileRightEdge - windowRightEdge;
-              popoverMenuContainer.css('left', '-=' + adjustTile);
-            }
-          },
-          error: function (jqXHR, textStatus, errorThrown) {
-            console.error('Error updating volume:', textStatus, errorThrown);
+          if (e.metaKey) {
+              var coordsx = $(this).data('coords-x');
+              var coordsy = $(this).data('coords-y');
+              $.ajax({
+                url: '/focus',
+                type: 'POST',
+                data: { x: coordsx, y: coordsy },
+                success: function (data) {
+                  console.log('Focus request successful:', data);
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                  console.error('Error updating volume:', textStatus, errorThrown);
+                }
+              });
+          } else {
+            $('.tiles-container .popover-menu').hide();
+            var entity_uid = $(this).data('coords-id');
+            $.ajax({
+              url: '/actions',
+              type: 'GET',
+              data: { id: entity_uid },
+              success: function (data) {
+                var popoverMenuContainer = $(tiles).find('.popover-menu');
+                popoverMenuContainer.html(data);
+                popoverMenuContainer.toggle();
+    
+                var tileRightEdge = popoverMenuContainer.offset().left + popoverMenuContainer.outerWidth();
+                var windowRightEdge = $(window).width();
+    
+                if (windowRightEdge < tileRightEdge) {
+                  var adjustTile = tileRightEdge - windowRightEdge;
+                  popoverMenuContainer.css('left', '-=' + adjustTile);
+                }
+              },
+              error: function (jqXHR, textStatus, errorThrown) {
+                console.error('Error updating volume:', textStatus, errorThrown);
+              }
+            });
           }
-        });
       }
   });
 
