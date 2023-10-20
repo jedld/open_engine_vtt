@@ -1,10 +1,11 @@
-- entity = battle.current_turn
-%img.current-turn-img{src: "/assets/#{entity.token_image}", style: "max-width: 75px;"}
-%button.btn.btn-primary#player-end-turn End Turn
-.indicator-container
-    %div.indicator.action{style: "background-color: blue;", title: "Action", data: { toggle: "tooltip", placement: "top"}}
-        %span= entity.total_actions(battle)
-    %div.indicator.bonus-action{style: "background-color: green", title: "Bonus Action", data: {toggle: "tooltip", placement: "top"}}
-        %span= entity.total_bonus_actions(battle)
-    %div.indicator.movement{style: "background-color: teal", title: "Movement", data: {toggle: "tooltip", placement: "top"}}
-        %span= "#{entity.available_movement(battle)}ft"
+- if battle.try(:current_turn)
+    - entity = battle.current_turn
+    %img.current-turn-img{src: "/assets/#{entity.token_image}", style: "max-width: 75px;"}
+    %button.btn.btn-primary#player-end-turn End Turn
+    .indicator-container
+        %div.indicator.action{style: "background-color: blue;", title: "Action", data: { toggle: "tooltip", placement: "top"}}
+            %span= entity.total_actions(battle)
+        %div.indicator.bonus-action{style: "background-color: green", title: "Bonus Action", data: {toggle: "tooltip", placement: "top"}}
+            %span= entity.total_bonus_actions(battle)
+        %div.indicator.movement{style: "background-color: teal", title: "Movement", data: {toggle: "tooltip", placement: "top"}}
+            %span= "#{entity.available_movement(battle)}ft"

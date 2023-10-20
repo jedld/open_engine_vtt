@@ -84,7 +84,7 @@ helpers do
     if settings.battle
       entity = settings.map.entity_by_uid(entity_uid)
       controller = settings.battle.controller_for(entity)
-      return controller.user == username
+      return controller.try(:user) == username
     end
 
     false
@@ -241,11 +241,22 @@ get '/event' do
 
     ws.on :open do |event|
       logger.info("open #{ws} for #{username}")
-      
-      settings.controllers[username] ||= WebController.new(username, ws)
+      web_controller_for_user = WebController.new(username, ws)
+      settings.controllers[username] ||= web_controller_for_user
       settings.controllers[username].update_socket(ws)
 
       settings.sockets << ws
+
+      # update existing controllers
+      if settings.battle
+        settings.battle.update_controllers do |entity, controller|
+          if controller.is_a?(WebController) && controller.user == username
+            web_controller_for_user
+          else
+            controller
+          end
+        end
+      end
       ws.send({type: 'info', message: ''}.to_json)
     end
 
@@ -540,6 +551,29 @@ post '/action' do
                   action_info[:range] = weapon_details[:range]
                   action_info[:range_max] = weapon_details[:range_max] || weapon_details[:range]
                   action.build_map
+                end
+              elsif ["GrappleAction", "HelpAction"].include?(action)
+                action_instance = Object.const_get(action).new(game_session, entity, Natural20::Action.to_type(action))
+
+                valid_targets = (settings.battle || settings.map).valid_targets_for(entity, action_instance).map do |target|
+                  [target.entity_uid, settings.map.entity_or_object_pos(entity)]
+                end.to_h
+                build_map = Object.const_get(action).build(game_session, entity)
+
+                if params[:target]
+                  target = settings.map.entity_at(params[:target][:x].to_i, params[:target][:y].to_i)
+                  if valid_targets.key?(target&.entity_uid)
+                    action_instance.target = target
+                    commit_and_update(action_instance)
+                    return { status: 'ok' }.to_json
+                  end
+                else
+                  target_info = build_map.param.first
+                  action_info[:valid_targets] = valid_targets
+                  action_info[:total_targets] = target_info[:num]
+                  action_info[:range] = target_info[:range]
+                  action_info[:range_max] = target_info[:range]
+                  action_instance.build_map
                 end
               else
                 build_map = Object.const_get(action).build(game_session, entity)
