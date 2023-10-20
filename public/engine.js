@@ -3,7 +3,7 @@ function command(command) {
   ws.send(JSON.stringify({ type: 'command', user: 'username', message: { action: "command", command: command } }));
 }
 
-function centerOnTile(tile) {
+function centerOnTile(tile, highlight= false) {
   const $board = $('.tiles-container');
   const boardWidth = $(window).width();
   const boardHeight = $(window).height();
@@ -21,13 +21,17 @@ function centerOnTile(tile) {
     scrollTop: scrollTop
   }, 500, function() {
     tile.fadeOut(150).fadeIn(150).fadeOut(150).fadeIn(150).fadeOut(150).fadeIn(150);
+    if (highlight) {
+      $('.tile').removeClass('focus-highlight-red');
+      tile.addClass('focus-highlight-red');
+    }
   });
   
 }
 
-function centerOnTileXY(x, y) {
+function centerOnTileXY(x, y, highlight = false) {
   var tile = $('.tile[data-coords-x="' + x + '"][data-coords-y="' + y + '"]');
-  centerOnTile(tile);
+  centerOnTile(tile, highlight);
 }
 
 function centerOnEntityId(id) {
@@ -140,7 +144,7 @@ $(document).ready(function () {
       case 'focus':
         var x = data.message.x;
         var y = data.message.y;
-        centerOnTileXY(x, y);
+        centerOnTileXY(x, y, true);
         break;
       case 'stoptrack':
         if (active_background_sound) {
@@ -235,7 +239,7 @@ $(document).ready(function () {
         }
       } else {
 
-          if (e.metaKey) {
+          if (e.metaKey || e.shiftKey) {
               var coordsx = $(this).data('coords-x');
               var coordsy = $(this).data('coords-y');
               $.ajax({
