@@ -1,4 +1,6 @@
 class WebController < Natural20::Controller
+    attr_accessor :user
+    
     class ManualControl < StandardError
     end
 

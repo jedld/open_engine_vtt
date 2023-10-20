@@ -54,8 +54,9 @@
           != haml :battle, :locals => {battle: battle}
     %div#console-container.floating-window{:style => "display: none;"}
       %div.header{:style => "cursor: move; "} Combat Log
-    %div.game-turn-container.floating-window{style: "display: none;"}
-      - if battle && controller_of?(battle.current_turn.entity_uid, username)
-        != haml :turn, :locals => {battle: battle}    
-                  
+    - if battle && controller_of?(battle.current_turn.entity_uid, username)      
+      %div.game-turn-container.floating-window
+        != haml :turn, :locals => {battle: battle}
+    - else
+      %div.game-turn-container.floating-window{style: "display: none;"}
                 

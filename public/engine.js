@@ -618,6 +618,7 @@ $(document).ready(function () {
                 },
                 success: function (data) {
                   console.log('Action request successful:', data);
+                  refreshTurn();
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                   console.error('Error requesting action:', textStatus, errorThrown);
@@ -646,6 +647,7 @@ $(document).ready(function () {
                 },
                 success: function (data) {
                   console.log('Action request successful:', data);
+                  refreshTurn();
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                   console.error('Error requesting action:', textStatus, errorThrown);
@@ -655,7 +657,6 @@ $(document).ready(function () {
 
             break;
           default:
-            debugger
             console.log('Unknown action type:', data.param[0].type);
         }
         console.log('Action request successful:', data);

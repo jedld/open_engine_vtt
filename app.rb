@@ -81,16 +81,19 @@ helpers do
   end
 
   def controller_of?(entity_uid, username)
-    owners = entity_owners(entity_uid)
+    if settings.battle
+      entity = settings.map.entity_by_uid(entity_uid)
+      controller = settings.battle.controller_for(entity)
+      return controller.user == username
+    end
 
-    return false unless owners
-
-    owners.include?(username)
+    false
   end
 
   def entity_owners(entity_uid)
     ctrl_info = CONTROLLERS.each.find { |controller| controller['entity_uid'] == entity_uid }
     return [] unless ctrl_info
+
     ctrl_info['controllers']
   end
 
@@ -346,7 +349,7 @@ post "/battle" do
                   if usernames.blank?
                     settings.controllers["dm"]
                   else
-                    settings.controllers[usernames.first]
+                    settings.controllers[usernames.first] || settings.controllers["dm"]
                   end
                  end
 
